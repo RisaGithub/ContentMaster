@@ -110,10 +110,10 @@ class CreateAuthorView(ft.View):
                 "description": self.description.value,
                 "keywords": self.keywords.value,
                 "articles_topic": self.articles_topic.value,
-                "text_tone": self.text_tone.value,
-                "text_style": self.text_style.value,
+                "text_tone": self.text_tone.value if self.text_tone.value else "",
+                "text_style": self.text_style.value if self.text_style.value else "",
+                "articles": [],
             }
-
             self.page.client_storage.set("authors", authors_dict)
             self.page.go("/")
         else:
