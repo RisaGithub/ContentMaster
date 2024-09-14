@@ -42,7 +42,7 @@ class HomeView(ft.View):
                 AuthorIcon(
                     page,
                     author_name=author_name,
-                    col={"sm": 6, "md": 5, "lg": 3.8, "xl": 2},
+                    col={"sm": 6, "md": 5, "lg": 4, "xl": 3, "xxl": 2.2},
                 )
             )
         create_author_btn = ft.Container(
@@ -51,7 +51,6 @@ class HomeView(ft.View):
             bgcolor=ft.colors.with_opacity(0.1, "white"),
             border_radius=30,
             on_click=self.create_author,
-            # col={"xs": 4, "sm": 4, "md": 2.5, "lg": 2, "xl": 2, "xxl": 1.2},
         )
 
         famous_people = ft.Row(

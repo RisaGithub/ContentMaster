@@ -1,11 +1,10 @@
 import flet as ft
 
+from data.g4f_utils import get_best_provider
+
 from views.create_author import CreateAuthorView
 from views.home import HomeView
 from views.author import AuthorView
-
-
-# border=ft.border.all(10, ft.colors.PINK_600),
 
 
 def main(page: ft.Page):
@@ -62,6 +61,7 @@ def main(page: ft.Page):
     page.on_route_change = route_changed
 
     page.client_storage.set("authors", {})
+
     page.go("/")
 
 

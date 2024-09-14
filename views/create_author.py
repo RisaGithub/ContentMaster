@@ -5,7 +5,7 @@ class MyRadio(ft.Radio):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.label_style = ft.TextStyle(size=18)
-        self.col = {"sm": 6, "md": 4, "xl": 2}
+        self.col = {"sm": 6, "md": 4, "xl": 3}
 
 
 class MyTextField(ft.TextField):
