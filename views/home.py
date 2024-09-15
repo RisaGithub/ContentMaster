@@ -42,7 +42,7 @@ class HomeView(ft.View):
                 AuthorIcon(
                     page,
                     author_name=author_name,
-                    col={"sm": 6, "md": 5, "lg": 4, "xl": 3, "xxl": 2.2},
+                    col={"sm": 6, "md": 5, "lg": 4, "xl": 3, "xxl": 2.5},
                 )
             )
         create_author_btn = ft.Container(
@@ -66,13 +66,6 @@ class HomeView(ft.View):
                                 ft.Text("Your Authors", size=30, opacity=0.7),
                                 authors,
                                 create_author_btn,
-                            ],
-                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                        ),
-                        ft.Column(
-                            [
-                                ft.Text("Famous People", size=30, opacity=0.7),
-                                famous_people,
                             ],
                             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                         ),

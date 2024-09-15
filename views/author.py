@@ -1,13 +1,149 @@
 import flet as ft
 from .create_author import MyRadio, MyTextField
 from data.article_generation import generate_article, generate_topics
+import data.article_generation
+
+
+class LoadingDiolog(ft.AlertDialog):
+    def __init__(self, page, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.page = page
+        self.modal = False
+        self.content = ft.ProgressRing(height=225, stroke_width=10)
+        self.bgcolor = ft.colors.TRANSPARENT
+
+
+class ArticleControl(ft.Container):
+    def __init__(self, page, author_name, article_dict, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.page = page
+        self.author_name = author_name
+        self.on_click = self.open_article
+        self.article_dict = article_dict
+        self.padding = 20
+        self.bgcolor = ft.colors.with_opacity(0.1, "white")
+        self.border_radius = 20
+        self.content = ft.Column(
+            [
+                ft.Text(self.article_dict["topic"], size=25, opacity=0.8),
+                ft.Text(self.get_short_text(self.article_dict["text"]), size=21),
+            ]
+        )
+
+    def get_short_text(self, text):
+        return (text[:150] + "...") if len(text) > 300 else text
+
+    def open_article(self, e):
+        topic = self.article_dict["topic"]
+        text = self.article_dict["text"]
+        self.current_topic_field = ft.TextField(
+            value=topic,
+            text_size=26,
+            opacity=0.9,
+            multiline=True,
+            border_color=ft.colors.TRANSPARENT,
+            focused_border_color=ft.colors.with_opacity(0.1, "#C2E0FF"),
+            border_radius=40,
+            bgcolor=ft.colors.with_opacity(0.05, "white"),
+            content_padding=ft.padding.symmetric(horizontal=45, vertical=20),
+        )
+        self.article_text_field = ft.TextField(
+            value=text,
+            text_size=24,
+            text_style=ft.TextStyle(height=0.99),
+            opacity=1,
+            multiline=True,
+            border_color=ft.colors.TRANSPARENT,
+            focused_border_color=ft.colors.with_opacity(0.1, "#C2E0FF"),
+            border_radius=40,
+            bgcolor=ft.colors.with_opacity(0.05, "white"),
+            content_padding=ft.padding.symmetric(horizontal=45, vertical=30),
+        )
+
+        def save_article(e):
+            previous_authors = self.page.client_storage.get("authors")
+            previous_authors[self.author_name]["articles"].remove(self.article_dict)
+            self.page.client_storage.set("authors", previous_authors)
+            new_article_dict = {
+                "topic": self.current_topic_field.value,
+                "text": self.article_text_field.value,
+            }
+
+            previous_authors = self.page.client_storage.get("authors")
+            previous_authors[self.author_name]["articles"].append(new_article_dict)
+            self.page.client_storage.set("authors", previous_authors)
+
+            self.page.close(self.dlg)
+            self.content = ft.Column(
+                [
+                    ft.Text(new_article_dict["topic"], size=25, opacity=0.8),
+                    ft.Text(self.get_short_text(new_article_dict["text"]), size=21),
+                ]
+            )
+            self.page.update()
+
+        content = ft.Container(
+            ft.Column(
+                [
+                    ft.Container(
+                        ft.Column(
+                            [
+                                self.current_topic_field,
+                                self.article_text_field,
+                            ],
+                            scroll=ft.ScrollMode.ALWAYS,
+                        ),
+                        margin=10,
+                        height=450,
+                    ),
+                    ft.Row(
+                        [
+                            ft.ElevatedButton(
+                                "Close",
+                                width=160,
+                                height=65,
+                                style=ft.ButtonStyle(
+                                    text_style=ft.TextStyle(size=25),
+                                    side=ft.BorderSide(
+                                        2, ft.colors.with_opacity(1, "red")
+                                    ),
+                                ),
+                                color="red",
+                                on_click=lambda _: self.page.close(self.dlg),
+                            ),
+                            ft.ElevatedButton(
+                                "Save",
+                                width=200,
+                                height=75,
+                                style=ft.ButtonStyle(
+                                    text_style=ft.TextStyle(size=25),
+                                    side=ft.BorderSide(
+                                        2, ft.colors.with_opacity(1, "#00ff62")
+                                    ),
+                                ),
+                                color="#00ff62",
+                                on_click=save_article,
+                            ),
+                        ],
+                        alignment=ft.MainAxisAlignment.CENTER,
+                    ),
+                ],
+            ),
+            padding=20,
+            width=self.page.width,
+        )
+
+        self.dlg = ft.AlertDialog(content=content)
+        self.page.open(self.dlg)
 
 
 class Articles(ft.Container):
-    def __init__(self, page, author_name, author_dict, tabs=None, *args, **kwargs):
+    def __init__(self, page, author_name, tabs=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.page = page
         self.tabs = tabs
-        if not author_dict["articles"]:
+        articles = self.page.client_storage.get("authors")[author_name]["articles"]
+        if not articles:
             content = ft.Column(
                 [
                     ft.Text("You don't have any articles yet", size=30, opacity=0.6),
@@ -19,35 +155,50 @@ class Articles(ft.Container):
                 alignment=ft.MainAxisAlignment.CENTER,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             )
-        self.content = content
+        else:
+            articles_column = ft.Column()
+            for art in articles:
+                articles_column.controls.append(
+                    ArticleControl(self.page, author_name=author_name, article_dict=art)
+                )
+            content = ft.Column(
+                [
+                    ft.Column(
+                        [ft.Container(articles_column, padding=30)],
+                        height=450,
+                        scroll=ft.ScrollMode.ALWAYS,
+                    ),
+                    ft.ElevatedButton(
+                        content=ft.Container(
+                            ft.Text("Create new", size=30), padding=20
+                        ),
+                        on_click=self.create_article,
+                    ),
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                col={"sm": 11, "md": 10, "xl": 7},
+            )
+        self.content = ft.ResponsiveRow(
+            [content], alignment=ft.MainAxisAlignment.CENTER
+        )
 
     def create_article(self, e):
         self.tabs.selected_index = 1
+        try:
+            self.page.views[-1].bottom_appbar.visible = True
+        except Exception:
+            pass
         self.page.update()
 
 
 class CreateArticle(ft.Container):
-    def __init__(self, page, author_name, author_dict, *args, **kwargs):
+    def __init__(self, page, author_name, author_dict, tabs=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.page = page
         self.author_dict = author_dict
-        suggested_topics = generate_topics(author_dict=self.author_dict)
-        self.topics_column = ft.Column(
-            [],
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-        )
-        for topic in suggested_topics:
-            self.topics_column.controls.append(
-                ft.ElevatedButton(
-                    text=topic,
-                    on_click=self.suggested_topic_clicked,
-                    expand=True,
-                    style=ft.ButtonStyle(
-                        padding=ft.padding.symmetric(vertical=22, horizontal=35),
-                        shape=ft.RoundedRectangleBorder(radius=18),
-                        text_style=ft.TextStyle(size=25),
-                    ),
-                ),
-            )
+        self.author_name = author_name
+        self.tabs = tabs
 
         self.topic_text_field = ft.TextField(
             label="What do you want the article to be about?",
@@ -64,8 +215,13 @@ class CreateArticle(ft.Container):
             max_length=500,
             max_lines=10,
         )
+        self.choose_topic_view()
 
-        self.choose_topic = ft.ResponsiveRow(
+    def choose_topic_view(self):
+        self.topics_column = self.get_topics_column()
+        self.topic_text_field.value = ""
+
+        self.content = ft.ResponsiveRow(
             [
                 ft.Column(
                     [
@@ -78,25 +234,9 @@ class CreateArticle(ft.Container):
                             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                             expand=True,
                         ),
-                        ft.Container(
-                            ft.ElevatedButton(
-                                "Generate",
-                                style=ft.ButtonStyle(
-                                    padding=ft.padding.symmetric(
-                                        vertical=25, horizontal=40
-                                    ),
-                                    text_style=ft.TextStyle(size=30),
-                                    color="#36e4ff",
-                                    side=ft.BorderSide(
-                                        2, ft.colors.with_opacity(1, "#36e4ff")
-                                    ),
-                                ),
-                                on_click=self.generate,
-                            ),
-                            padding=ft.padding.only(bottom=75),
-                        ),
+                        ft.Container(),
                     ],
-                    col=6,
+                    col={"xs": 11, "sm": 11, "md": 10, "xl": 6},
                     alignment=ft.MainAxisAlignment.CENTER,
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 )
@@ -104,11 +244,62 @@ class CreateArticle(ft.Container):
             alignment=ft.MainAxisAlignment.CENTER,
         )
 
-        self.content = self.choose_topic
+    def get_topics_column(self):
+        dlg = LoadingDiolog(self.page)
+        self.page.open(dlg)
+        suggested_topics = generate_topics(
+            author_dict=self.page.client_storage.get("authors")[self.author_name]
+        )
+        self.page.close(dlg)
+        topics_column = ft.Column(
+            [],
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+        for topic in suggested_topics:
+            topics_column.controls.append(
+                ft.ElevatedButton(
+                    text=topic,
+                    on_click=self.suggested_topic_clicked,
+                    expand=True,
+                    style=ft.ButtonStyle(
+                        padding=ft.padding.symmetric(vertical=15, horizontal=35),
+                        shape=ft.RoundedRectangleBorder(radius=18),
+                        text_style=ft.TextStyle(size=20),
+                    ),
+                ),
+            )
+        return topics_column
 
     def suggested_topic_clicked(self, e):
         self.topic_text_field.value = e.control.text
         self.topics_column.visible = False
+        self.show_generate_btn_appbar()
+        self.page.update()
+
+    def show_generate_btn_appbar(self):
+        generate_btn = ft.ElevatedButton(
+            "Generate",
+            style=ft.ButtonStyle(
+                padding=ft.padding.symmetric(vertical=25, horizontal=40),
+                text_style=ft.TextStyle(size=30),
+                color="#36e4ff",
+                side=ft.BorderSide(2, ft.colors.with_opacity(1, "#36e4ff")),
+            ),
+            on_click=self.generate,
+        )
+        self.page.views[-1].bottom_appbar = ft.BottomAppBar(
+            content=ft.Container(
+                ft.Row(
+                    [generate_btn],
+                    spacing=32,
+                    alignment=ft.MainAxisAlignment.CENTER,
+                ),
+                blur=20,
+            ),
+            bgcolor=ft.colors.TRANSPARENT,
+            height=150,
+            padding=ft.padding.only(bottom=15),
+        )
         self.page.update()
 
     def topic_text_field_changed(self, e):
@@ -116,7 +307,7 @@ class CreateArticle(ft.Container):
             self.topics_column.visible = True
         else:
             self.topics_column.visible = False
-        self.page.update()
+        self.show_generate_btn_appbar()
 
     def generate(self, e):
         if not self.topic_text_field.value:
@@ -133,10 +324,13 @@ class CreateArticle(ft.Container):
         else:
             topic = self.topic_text_field.value
             # generate article
+            dlg = LoadingDiolog(self.page)
+            self.page.open(dlg)
             text = generate_article(author_dict=self.author_dict, topic=topic)
-            topic_field = ft.TextField(
+            self.page.close(dlg)
+            self.current_topic_field = ft.TextField(
                 value=topic,
-                text_size=28,
+                text_size=26,
                 opacity=0.9,
                 multiline=True,
                 border_color=ft.colors.TRANSPARENT,
@@ -148,7 +342,8 @@ class CreateArticle(ft.Container):
             self.article_text_field = ft.TextField(
                 value=text,
                 text_size=24,
-                opacity=0.85,
+                text_style=ft.TextStyle(height=0.99),
+                opacity=1,
                 multiline=True,
                 border_color=ft.colors.TRANSPARENT,
                 focused_border_color=ft.colors.with_opacity(0.1, "#C2E0FF"),
@@ -164,7 +359,7 @@ class CreateArticle(ft.Container):
                             ft.Container(
                                 ft.Column(
                                     [
-                                        topic_field,
+                                        self.current_topic_field,
                                         self.article_text_field,
                                     ],
                                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -172,7 +367,7 @@ class CreateArticle(ft.Container):
                                 padding=50,
                             ),
                         ],
-                        col={"md": 10, "xl": 7},
+                        col={"sm": 11, "md": 10, "xl": 7},
                         scroll=ft.ScrollMode.ALWAYS,
                     )
                 ],
@@ -203,6 +398,7 @@ class CreateArticle(ft.Container):
                     side=ft.BorderSide(2, ft.colors.with_opacity(1, "#00ff62")),
                 ),
                 color="#00ff62",
+                on_click=self.save_article,
             )
 
             self.page.views[-1].bottom_appbar = ft.BottomAppBar(
@@ -329,10 +525,33 @@ class CreateArticle(ft.Container):
             self.page.close(self.dlg)
         else:
             # change previos text based on edit_text_field content
-            new_text = "dassssssssdsaaaaaaaaaaaaaaa"
+            dlg = LoadingDiolog(self.page)
+            self.page.open(dlg)
+            new_text = data.article_generation.edit_article(
+                article_text=self.article_text_field.value,
+                changes=self.edit_text_field.value,
+            )
+            self.page.close(dlg)
             self.article_text_field.value = new_text
             self.page.update()
             self.page.close(self.dlg)
+
+    def save_article(self, e):
+        article_dict = {
+            "topic": self.current_topic_field.value,
+            "text": self.article_text_field.value,
+        }
+        authors_dict = self.page.client_storage.get("authors")
+        # add new article to author
+        authors_dict[self.author_name]["articles"].append(article_dict)
+        # save
+        self.page.client_storage.set("authors", authors_dict)
+        self.choose_topic_view()
+        self.show_generate_btn_appbar()
+        self.page.views[-1].bottom_appbar.visible = False
+        self.tabs.selected_index = 0
+        self.page.views[-1].tab_changed()
+        self.page.update()
 
 
 class Profile(ft.Column):
@@ -469,6 +688,7 @@ class Profile(ft.Column):
         existing_dict = self.page.client_storage.get("authors")
         del existing_dict[self.author_name]
         self.page.client_storage.set("authors", existing_dict)
+        self.page.go("/")
 
 
 class MyTab(ft.Tab):
@@ -486,9 +706,11 @@ class AuthorView(ft.View):
     def __init__(self, page, author_name, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.page = page
+        self.author_name = author_name
         self.padding = ft.padding.only(top=65)
 
         author_dict = page.client_storage.get("authors")[author_name]
+        self.author_dict = author_dict
 
         articles_tab = MyTab(
             text="Articles",
@@ -505,7 +727,7 @@ class AuthorView(ft.View):
             content=ft.Container(),
         )
 
-        tabs = ft.Tabs(
+        self.tabs = ft.Tabs(
             selected_index=0,
             animation_duration=300,
             tabs=[articles_tab, create_article_tab, profile_tab],
@@ -515,24 +737,37 @@ class AuthorView(ft.View):
             on_change=self.tab_changed,
         )
 
-        articles_tab.content = Articles(
-            page, author_name=author_name, author_dict=author_dict, tabs=tabs
-        )
+        articles_tab.content = Articles(page, author_name=author_name, tabs=self.tabs)
         profile_tab.content = Profile(
             page, author_name=author_name, author_dict=author_dict
         )
         create_article_tab.content = CreateArticle(
-            page, author_name=author_name, author_dict=author_dict
+            page, author_name=author_name, author_dict=author_dict, tabs=self.tabs
         )
 
-        self.controls = [tabs]
+        self.controls = [self.tabs]
 
-    def tab_changed(self, e):
-        if e.control.selected_index != 1:
-            if self.bottom_appbar:
-                self.bottom_appbar.visible = False
-                self.bottom_appbar.update()
+    def tab_changed(self, e=None):
+        if not e:
+            self.tabs.tabs[0].content = Articles(
+                self.page,
+                author_name=self.author_name,
+                tabs=self.tabs,
+            )
+            self.page.update()
         else:
-            if self.bottom_appbar:
-                self.bottom_appbar.visible = True
-                self.bottom_appbar.update()
+            if e.control.selected_index != 1:
+                if self.bottom_appbar:
+                    self.bottom_appbar.visible = False
+                    self.bottom_appbar.update()
+            else:
+                if self.bottom_appbar:
+                    self.bottom_appbar.visible = True
+                    self.bottom_appbar.update()
+            if e.control.selected_index == 0:
+                self.tabs.tabs[0].content = Articles(
+                    self.page,
+                    author_name=self.author_name,
+                    tabs=self.tabs,
+                )
+                self.page.update()

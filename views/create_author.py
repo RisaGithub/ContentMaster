@@ -34,7 +34,7 @@ class CreateAuthorView(ft.View):
         self.text_tone = ft.RadioGroup(
             content=ft.Column(
                 [
-                    ft.Text("Select text tone:", size=20),
+                    ft.Text("Select text tone:", size=20, opacity=0.6),
                     ft.ResponsiveRow(
                         [
                             MyRadio(value="formal", label="Formal"),
@@ -44,12 +44,13 @@ class CreateAuthorView(ft.View):
                     ),
                 ],
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=0,
             )
         )
         self.text_style = ft.RadioGroup(
             content=ft.Column(
                 [
-                    ft.Text("Select text style:", size=20),
+                    ft.Text("Select text style:", size=20, opacity=0.6),
                     ft.ResponsiveRow(
                         [
                             MyRadio(value="artistic", label="Artistic"),
@@ -62,6 +63,7 @@ class CreateAuthorView(ft.View):
                     ),
                 ],
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=-5,
             )
         )
 
@@ -82,7 +84,7 @@ class CreateAuthorView(ft.View):
                         self.text_style,
                         create_btn,
                     ],
-                    spacing=20,
+                    spacing=4,
                     col={"md": 6},
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 ),
@@ -90,7 +92,12 @@ class CreateAuthorView(ft.View):
             alignment=ft.MainAxisAlignment.CENTER,
         )
 
-        self.controls = [ft.Container(content=container, padding=ft.padding.all(40))]
+        self.controls = [
+            ft.Container(
+                content=container,
+                padding=ft.padding.all(40),
+            )
+        ]
 
     def create_author(self, e):
         if self.name.value in self.page.client_storage.get("authors"):
