@@ -1,13 +1,13 @@
 import flet as ft
 
-from data.g4f_utils import get_best_provider
-
 from views.create_author import CreateAuthorView
 from views.home import HomeView
 from views.author import AuthorView
 
 
 def main(page: ft.Page):
+    page.add(ft.Text("Hello, async world!"))
+
     # Font
     page.fonts = {
         "Montserrat": "assets\\fonts\\Montserrat-Regular.ttf",

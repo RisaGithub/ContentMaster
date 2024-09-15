@@ -1,5 +1,6 @@
 import flet as ft
 from .create_author import MyRadio, MyTextField
+from data.article_generation import generate_article, generate_topics
 
 
 class Articles(ft.Container):
@@ -28,8 +29,8 @@ class Articles(ft.Container):
 class CreateArticle(ft.Container):
     def __init__(self, page, author_name, author_dict, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        suggested_topics = ["topic1", "topic2", "topic1"]
+        self.author_dict = author_dict
+        suggested_topics = generate_topics(author_dict=self.author_dict)
         self.topics_column = ft.Column(
             [],
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -59,7 +60,9 @@ class CreateArticle(ft.Container):
             content_padding=ft.padding.symmetric(horizontal=35, vertical=30),
             multiline=True,
             min_lines=2,
-            on_change=self.topic_text_field_changed, max_length=500, max_lines=10
+            on_change=self.topic_text_field_changed,
+            max_length=500,
+            max_lines=10,
         )
 
         self.choose_topic = ft.ResponsiveRow(
@@ -73,7 +76,7 @@ class CreateArticle(ft.Container):
                             ],
                             alignment=ft.MainAxisAlignment.CENTER,
                             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                            expand=True
+                            expand=True,
                         ),
                         ft.Container(
                             ft.ElevatedButton(
@@ -129,24 +132,8 @@ class CreateArticle(ft.Container):
             self.page.open(dlg)
         else:
             topic = self.topic_text_field.value
-            text = """What does a neuron look like?
-            A useful analogy is to think of a neuron as a tree. A neuron has three main parts: dendrites, an axon, and a cell body or soma (see image below), which can be represented as the branches, roots and trunk of a tree, respectively. A dendrite (tree branch) is where a neuron receives input from other cells. Dendrites branch as they move towards their tips, just like tree branches do, and they even have leaf-like structures on them called spines.
-
-            The axon (tree roots) is the output structure of the neuron; when a neuron wants to talk to another neuron, it sends an electrical message called an action potential throughout the entire axon. The soma (tree trunk) is where the nucleus lies, where the neuron’s DNA is housed, and where proteins are made to be transported throughout the axon and dendrites. 
-
-
-            The tree-like structure of a neuron. Dendritic spines are small structures that receive inputs from the axons of other neurons. Bottom-right image: a segment of dendrite from which spines branch off, like leaves off a tree branch. Note the very small size (~0.001mm). (Image: Alan Woodruff ; De Roo et al / CC BY-SA 3.0 via Commons)
-            There are different types of neurons, both in the brain and the spinal cord. They are generally divided according to where they orginate, where they project to and which neurotransmitters they use.
-
-            Concepts and definitions
-            Axon – The long, thin structure in which action potentials are generated; the transmitting part of the neuron. After initiation, action potentials travel down axons to cause release of neurotransmitter.
-
-            Dendrite – The receiving part of the neuron. Dendrites receive synaptic inputs from axons, with the sum total of dendritic inputs determining whether the neuron will fire an action potential.
-
-            Spine – The small protrusions found on dendrites that are, for many synapses, the postsynaptic contact site.
-
-            Action potential – Brief electrical event typically generated in the axon that signals the neuron as 'active'. An action potential travels the length of the axon and causes release of neurotransmitter into the synapse. The action potential and consequent transmitter release allow the neuron to communicate with other neurons.
-            """
+            # generate article
+            text = generate_article(author_dict=self.author_dict, topic=topic)
             topic_field = ft.TextField(
                 value=topic,
                 text_size=28,
@@ -275,7 +262,9 @@ class CreateArticle(ft.Container):
             bgcolor=ft.colors.with_opacity(0.1, "black"),
             content_padding=ft.padding.symmetric(horizontal=35, vertical=30),
             multiline=True,
-            min_lines=1, max_lines=3, max_length=500
+            min_lines=1,
+            max_lines=3,
+            max_length=500,
         )
 
         content = ft.Container(
@@ -322,14 +311,13 @@ class CreateArticle(ft.Container):
                         spacing=25,
                     ),
                 ],
-                
                 spacing=20,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 alignment=ft.MainAxisAlignment.CENTER,
                 expand=True,
             ),
             padding=15,
-            height=535, 
+            height=535,
         )
 
         self.dlg = ft.AlertDialog(content=content)
@@ -541,8 +529,10 @@ class AuthorView(ft.View):
 
     def tab_changed(self, e):
         if e.control.selected_index != 1:
-            self.bottom_appbar.visible = False
-            self.bottom_appbar.update()
+            if self.bottom_appbar:
+                self.bottom_appbar.visible = False
+                self.bottom_appbar.update()
         else:
-            self.bottom_appbar.visible = True
-            self.bottom_appbar.update()
+            if self.bottom_appbar:
+                self.bottom_appbar.visible = True
+                self.bottom_appbar.update()
