@@ -6,8 +6,6 @@ from views.author import AuthorView
 
 
 def main(page: ft.Page):
-    page.add(ft.Text("Hello, async world!"))
-
     # Font
     page.fonts = {
         "Montserrat": "assets\\fonts\\Montserrat-Regular.ttf",
