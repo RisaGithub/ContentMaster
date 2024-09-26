@@ -451,4 +451,4 @@ no_words_rus = {
     "наверное",
 }
 
-NO_WORDS_SET = no_words_eng.union()
+NO_WORDS_SET = no_words_eng.union(no_words_rus)
