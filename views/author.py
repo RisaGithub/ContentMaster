@@ -2,6 +2,8 @@ import flet as ft
 from .create_author import MyRadio, MyTextField
 from data.article_generation import generate_article, generate_topics
 import data.article_generation
+import re
+from data.analitics import NO_WORDS_SET
 
 
 class LoadingDiolog(ft.AlertDialog):
@@ -11,6 +13,97 @@ class LoadingDiolog(ft.AlertDialog):
         self.modal = False
         self.content = ft.ProgressRing(height=225, stroke_width=10)
         self.bgcolor = ft.colors.TRANSPARENT
+
+
+class AnaliticsDiolog(ft.AlertDialog):
+    def __init__(self, page, text, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.page = page
+
+        # keywords
+        text = text.lower()
+        words_list = text.split()
+        words_set = set()
+        [words_set.add(w) for w in words_list]
+        words_to_count = {}
+        for word in words_set:
+            if word not in words_to_count:
+                words_to_count[word] = 0
+            words_to_count[word] = words_list.count(word)
+
+        words_to_count = {
+            k: v
+            for k, v in sorted(
+                words_to_count.items(), key=lambda item: item[1], reverse=True
+            )
+        }
+
+        # symbols
+        symbols_count = len(text)
+        # words
+        words_count = len(words_list)
+
+        self.key_words_container = ft.Row(
+            controls=[], wrap=True, scroll=ft.ScrollMode.ALWAYS, height=80
+        )
+        for word in words_to_count:
+            count = words_to_count[word]
+            if count != 1 and self.is_word(word):
+                self.key_words_container.controls.append(
+                    ft.Text(
+                        f"{word} ({count})",
+                        size=20,
+                        color=ft.colors.with_opacity(0.9, "#e5d0ff"),
+                    )
+                )
+
+        self.content = ft.Column(
+            [
+                ft.Text("Keywords", size=24),
+                self.key_words_container,
+                ft.Text("Text data", size=24),
+                ft.Row(
+                    [
+                        ft.Text("Symbols:", size=20, opacity=0.7),
+                        ft.Text(symbols_count, size=20, color="#e5d0ff"),
+                    ],
+                    alignment=ft.MainAxisAlignment.CENTER,
+                ),
+                ft.Row(
+                    [
+                        ft.Text("Words:", size=20, opacity=0.7),
+                        ft.Text(words_count, size=20, color="#e5d0ff"),
+                    ],
+                    alignment=ft.MainAxisAlignment.CENTER,
+                ),
+                ft.ElevatedButton(
+                    "Close",
+                    width=160,
+                    height=65,
+                    style=ft.ButtonStyle(
+                        text_style=ft.TextStyle(size=25),
+                        side=ft.BorderSide(2, ft.colors.with_opacity(1, "red")),
+                    ),
+                    color="red",
+                    on_click=self.close,
+                ),
+            ],
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            alignment=ft.MainAxisAlignment.CENTER,
+            height=300,
+            width=600,
+        )
+
+    def close(self, e):
+        self.visible = False
+        self.page.update()
+
+    def is_word(self, word):
+        # Check if the string is alphabetic (word) and not a symbol (supports both Latin and Cyrillic characters)
+        if re.match(r"^[a-zA-Zа-яА-ЯёЁ]+$", word):
+            # Convert string to lowercase and check if it's not in the prepositions or conjunctions list
+            return word.lower() not in NO_WORDS_SET
+        return False
 
 
 class ArticleControl(ft.Container):
@@ -374,6 +467,25 @@ class CreateArticle(ft.Container):
                 alignment=ft.MainAxisAlignment.CENTER,
             )
 
+            analitics_btn = ft.ElevatedButton(
+                content=ft.Row(
+                    [
+                        ft.Icon(ft.icons.QUESTION_MARK_ROUNDED, size=25),
+                        ft.Text("Analitics", size=25),
+                    ],
+                    alignment=ft.MainAxisAlignment.CENTER,
+                ),
+                style=ft.ButtonStyle(
+                    side=ft.BorderSide(2, ft.colors.with_opacity(1, "#b163ff")),
+                ),
+                width=200,
+                height=75,
+                color="#b163ff",
+                on_click=lambda _: self.page.open(
+                    AnaliticsDiolog(self.page, self.article_text_field.value)
+                ),
+            )
+
             edit_btn = ft.ElevatedButton(
                 content=ft.Row(
                     [ft.Icon(ft.icons.EDIT_ROUNDED, size=25), ft.Text("Edit", size=25)],
@@ -404,7 +516,7 @@ class CreateArticle(ft.Container):
             self.page.views[-1].bottom_appbar = ft.BottomAppBar(
                 content=ft.Container(
                     ft.Row(
-                        [edit_btn, save_btn],
+                        [analitics_btn, edit_btn, save_btn],
                         spacing=32,
                         alignment=ft.MainAxisAlignment.CENTER,
                     ),
