@@ -1,7 +1,6 @@
 # ContentMaster
-https://contentmaster.onrender.com
-<img src="demo/1.png" width="400" height="auto">
-<img src="demo/2.png" width="400" height="auto">
+<img src="demo/1.png" width="300" height="auto">
+<img src="demo/2.png" width="300" height="auto">
 
 ### Project for hackathon CODEMASTERS CODE CUP (Track "Development of business applications using artificial intelligence")
 
