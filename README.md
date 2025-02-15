@@ -1,6 +1,12 @@
 # ContentMaster
 <img src="demo/1.png" width="300" height="auto">
 <img src="demo/2.png" width="300" height="auto">
+<img src="demo/3.png" width="300" height="auto">
+<img src="demo/4.png" width="300" height="auto">
+<img src="demo/5.png" width="300" height="auto">
+<img src="demo/6.png" width="300" height="auto">
+<img src="demo/7.png" width="300" height="auto">
+<img src="demo/8.png" width="300" height="auto">
 
 ### Project for hackathon CODEMASTERS CODE CUP (Track "Development of business applications using artificial intelligence")
 
